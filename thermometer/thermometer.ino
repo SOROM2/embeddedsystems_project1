@@ -5,6 +5,12 @@
 #define WIDTH 1
 #define HEIGHT 1
 
+enum mode {
+    celclius,
+    fahrenheit,
+    both
+};
+
 #define TEMP_PIN 0
 
 void setup() {
