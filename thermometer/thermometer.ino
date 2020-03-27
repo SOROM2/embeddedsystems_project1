@@ -16,6 +16,7 @@ enum mode {
 
 const uint8_t* FONT_1ROW = Arial14;
 const uint8_t* FONT_2ROW = SystemFont5x7;
+
 enum mode current_mode;
 
 SoftDMD dmd(WIDTH, HEIGHT);
@@ -31,3 +32,23 @@ void loop() {
     delay(DELAY_MS);
 }
 
+/**
+ * Changes the global mode and the font for the mode
+ * 
+ * Param 1 is a mode enum which decides the font to be used
+ */
+void change_mode(enum mode m) {
+    current_mode = m;
+    dmd.selectFont(m = both ? FONT_2ROW : FONT_1ROW);
+}
+
+/**
+   Code from: https://www.jaycar.co.nz/medias/sys_master/images/images/9369168412702/XC4494-manualMain.pdf
+*/
+double thermister(int RawADC) {
+  double Temp;
+  Temp = log(((10240000 / RawADC) - 10000));
+  Temp = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * Temp * Temp )) * Temp );
+  Temp -= 273.15;
+  return Temp;
+}
