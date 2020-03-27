@@ -7,6 +7,9 @@
 #define WIDTH 1
 #define HEIGHT 1
 
+/**
+ * Enumeration for modal display
+ */
 enum mode {
     celcius,
     fahrenheit,
@@ -16,11 +19,15 @@ enum mode {
 #define TEMP_PIN 0
 #define DELAY_MS 2000
 #define BUFFER_LEN 8
+#define C_CHAR "C"
+#define F_CHAR "F"
 
 const uint8_t* FONT_1ROW = Arial14;
 const uint8_t* FONT_2ROW = SystemFont5x7;
 
 char* main_buf;
+char* row_1;
+char* row_2;
 
 double temp_c;
 double temp_f;
@@ -30,21 +37,65 @@ enum mode current_mode;
 SoftDMD dmd(WIDTH, HEIGHT);
 
 void setup() {
-    main_buf = (char*)malloc(sizeof(char) * BUFFER_LEN);
+    // allocate memory for row buffers
+    row_1 = (char*)malloc(sizeof(char) * BUFFER_LEN);
+    row_2 = (char*)malloc(sizeof(char) * BUFFER_LEN);
+    main_buf = row_1; // row 1 is also the main buffer
 
+    // default the mode to both, set matrix led brightness
+    set_mode(both);
     dmd.setBrightness(255);
+
     dmd.begin();
-    change_mode(celcius);
 }
 
 void loop() {
+    // get celcius and fahrenheit temps
     temp_c = thermister(analogRead(TEMP_PIN));
     temp_f = (temp_c * 1.8) + 32.0;
 
-    double_tostr(main_buf, temp_c);
+    format_string();
     dmd.clearScreen();
-    dmd.drawString(0,0, main_buf);
+    draw_screen();
+
     delay(DELAY_MS);
+}
+
+/**
+ * Draws either 1 row or both depending on the current mode.
+ * If mode is both, the draw row 2 then draw row 1
+ * Any other mode state will only draw row 1.
+ */
+void draw_screen() {
+    switch(current_mode) {
+        case both:
+            dmd.drawString(1, 9, row_2);
+        default:
+            dmd.drawString(1, 0, row_1);
+            break;
+    }
+}
+
+/**
+ * Prepares buffers for display depending on the current mode.
+ */
+void format_string() {
+    switch (current_mode) {
+        case celcius:
+            double_tostr(main_buf, temp_c);
+            strcat(main_buf, C_CHAR);
+            break;
+        case fahrenheit:
+            double_tostr(main_buf, temp_f);
+            strcat(main_buf, F_CHAR);
+            break;
+        default:
+            double_tostr(row_1, temp_c);
+            strcat(row_1, C_CHAR);
+            double_tostr(row_2, temp_f);
+            strcat(row_2, F_CHAR);
+            break;
+    }
 }
 
 /**
@@ -76,7 +127,7 @@ void double_tostr(char* buffer, double d) {
  * 
  * Param 1 is a mode enum which decides the font to be used.
  */
-void change_mode(enum mode m) {
+void set_mode(enum mode m) {
     current_mode = m;
     dmd.selectFont(m == both ? FONT_2ROW : FONT_1ROW);
 }
