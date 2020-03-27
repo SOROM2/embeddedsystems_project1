@@ -17,6 +17,7 @@ enum mode {
 };
 
 #define TEMP_PIN 0
+#define BUTTON_PIN 2
 #define DELAY_MS 2000
 #define BUFFER_LEN 8
 #define C_CHAR "C"
@@ -32,11 +33,16 @@ char* row_2;
 double temp_c;
 double temp_f;
 
+int start_time;
+
 enum mode current_mode;
 
 SoftDMD dmd(WIDTH, HEIGHT);
 
 void setup() {
+    start_time = 0;
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
+  
     // allocate memory for row buffers
     row_1 = (char*)malloc(sizeof(char) * BUFFER_LEN);
     row_2 = (char*)malloc(sizeof(char) * BUFFER_LEN);
@@ -59,6 +65,21 @@ void loop() {
     draw_screen();
 
     delay(DELAY_MS);
+    //button_delay(DELAY_MS);
+}
+
+/**
+ * 
+ */
+void button_delay(int limit) {
+  start_time = millis();
+  while ((millis() - start_time) < limit) {
+    if (digitalRead(BUTTON_PIN) == LOW) {
+      set_mode( (enum mode)((current_mode + 1) % 3 ));
+      delay(300);
+      break;
+    }
+  }
 }
 
 /**
