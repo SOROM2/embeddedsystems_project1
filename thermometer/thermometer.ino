@@ -15,14 +15,13 @@
  * 
  * len is always at the end which should represent the amount of modes in the enum,
  * this is so if a mode is added or removed, the next_mode function will always account for this.
- * 
  */
 enum mode {
-  celcius,
-  fahrenheit,
-  both,
+    celcius,
+    fahrenheit,
+    both,
   
-  len
+    len
 };
 
 // constant compile time values
@@ -33,6 +32,7 @@ enum mode {
 #define BUFFER_LEN 8
 #define C_CHAR "C"
 #define F_CHAR "F"
+#define SP_CHAR " "
 
 // constant runtime values
 const uint8_t* FONT_1ROW = Arial14;
@@ -118,10 +118,14 @@ void draw_screen() {
     dmd.clearScreen();
 
     switch (current_mode) {
-        case both:
-            dmd.drawString(0, 9, row_2);
+        case celcius:
+            dmd.drawString(1, 2, main_buf);
+        case fahrenheit:
+            dmd.drawString(1, 2, main_buf);
+            break;
         default:
-            dmd.drawString(0, 0, row_1);
+            dmd.drawString(1, 0, row_1);
+            dmd.drawString(1, 9, row_2);
             break;
     }
 }
@@ -132,19 +136,35 @@ void draw_screen() {
 void format_string() {
     switch (current_mode) {
         case celcius:
-            double_tostr(main_buf, temp_c);
+            double_tostr(main_buf, temp_c, true);
             strcat(main_buf, C_CHAR);
             break;
         case fahrenheit:
-            double_tostr(main_buf, temp_f);
+            double_tostr(main_buf, temp_f, true);
             strcat(main_buf, F_CHAR);
             break;
         default:
-            double_tostr(row_1, temp_c);
+            align_point(row_1, temp_c);
             strcat(row_1, C_CHAR);
-            double_tostr(row_2, temp_f);
+
+            align_point(row_2, temp_f);
             strcat(row_2, F_CHAR);
             break;
+    }
+}
+
+/**
+ * Ensures the digits before the '.' in the buffer will be 2 chars.
+ *
+ * Param 1 is a pointer to a buffer, this is where the string will end up.
+ * Param 2 is a double, this is the value to be formatted into the buffer.
+ */
+void align_point(char* buffer, double d) {
+    if ((d < 10.0) && (d >= 0.0)) {
+        strcpy(buffer, SP_CHAR);
+        double_tostr(buffer, d, false);
+    } else {
+        double_tostr(buffer, d, true);
     }
 }
 
@@ -153,8 +173,9 @@ void format_string() {
  *
  * Param 1 is a pointer to a string, this contains pre-allocatem memory ready for writing.
  * Param 2 is a double, this will be converted into a string and written into the param 1's memory.
+ * Param 3 is a bool, this decides if the formatted input should initially be strcat or strcpy into the buffer.
  */
-void double_tostr(char* buffer, double d) {
+void double_tostr(char* buffer, double d, bool copy) {
     int d_int;
     int d_1fint;
     
@@ -164,7 +185,11 @@ void double_tostr(char* buffer, double d) {
     d_1fint = (int)((d - (double)d_int) * 10);  // getting the 1 decimal place value as an integer
     
     itoa(d_int, tmp, 10);       // convert d_int (base 10) into a char array placed in tmp
-    strcpy(buffer, tmp);        // copy the string from tmp into buffer
+    if (copy) {
+        strcpy(buffer, tmp);        // copy the string from tmp into buffer
+    } else {
+        strcat(buffer, tmp);        // copy the string from tmp into buffer
+    }
     strcat(buffer, ".");        // concat "." to the string in buffer
     itoa(d_1fint, tmp, 10);     // convert d_1fint (base10) into a char array placed in tmp
     strcat(buffer, tmp);        // concat the string in tmp to the string in buffer
@@ -181,3 +206,4 @@ void set_mode(enum mode m) {
     current_mode = m;
     dmd.selectFont(m == both ? FONT_2ROW : FONT_1ROW);
 }
+
